@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="main.css">
+
+
+    <title>Chat App</title>
+    <style>
+        #texting{height:250px};
+    </style> 
+    <style>
+        .texts {
+          background-color: rgb(161, 97, 97);
+          color: rgb(0, 0, 0);
+          margin: 20px;
+          padding: 20px;
+        }
+        </style>
+</head>
+<body style = "background-color: rgb(235, 75, 75);">
+
+    <div class = "container">
+        <div class = "row">
+            <div class = "col-md-15 offset-md-15 col-sm-12">
+                <h1 class="text-left">
+                CHAT APP
+                <button id = "clear" class="btn btn-default">clear</button>
+            </h1>
+            <div id = "status"></div>
+
+            <div id = "text">
+                <input type = "text" id = "user" class = "form-control" placeholder = "Put your name down here! ">
+                <div class = "w3-card-4">
+                    <div id = "texting" class = "texts">
+
+                    </div>
+                </div>
+                <br>
+                <textarea id = "textarea" class = "form-control" placeholder = "Message over here and hit enter!"></textarea>
+            </div>
+            
+            </div>
+        </div>
+    </div>
+    
+
+
+    <script src = "https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.dev.js"></script>
+
+    <script>
+        (function(){
+            var element = function(id){
+                return document.getElementById(id);
+            }
+
+            // Getting various elements
+            var status = element('status');
+            var texting = element('texting');
+            var textarea = element('textarea');
+            var username = element('user');
+            var deletebtn = element('clear');
+
+            // status 
+            var statusDefault = status.textContent; // by default no status between start and end div of status
+            var sstatus = function(s){
+                status.textContent = s; // when asking for status from server
+
+                if(s !== statusDefault){
+                    var delay = setTimeout(function(){
+                        sstatus(statusDefault); // want the status "message sent" to disappear 
+                    }, 3000); //in milliseconds
+                }
+            }
+
+            //connecting to server/socket.io
+            var socket = io.connect('http://127.0.0.1:4000');
+            
+            //make sure its been connected 
+            if(socket !== undefined){
+                console.log('Socket has been successfully connected');
+
+                //Ouput
+                socket.on('output', function(data){ // from output in server.js, getting data (res) being send from server as this data
+                    if(data.length){
+                        for(var i=0; i < data.length; i++){
+                            
+                            var message = document.createElement('div'); // creating message div
+                            message.setAttribute('class', 'text-message');
+                            message.textContent = data[i].name +" sent a message: "+ data[i].message;
+                            texting.appendChild(message); // append messages
+                            
+                        }
+                    }   
+                });
+
+                // status stuff
+                socket.on('status', function(data){
+                    sstatus((typeof data === 'object')? data.message : data); // data.message is there then message, else data
+
+                    // status deleted? delete text too 
+                    if(data.clear){
+                        textarea.value = '';
+                    }
+                });
+
+                // Input 
+                textarea.addEventListener('keydown', function(event){
+                    if(event.which === 13 && event.shiftKey == false){ //keycode 13 for return or enter
+                        // emitting the user's input to server 
+                        socket.emit('input', {
+                            name:user.value,
+                            message:textarea.value
+                        });
+
+                        event.preventDefault(); // prevent event from happening automatically
+
+                    }
+                });
+
+                // Chat deletion
+                deletebtn.addEventListener('click', function(){ // remember emitting to events on server side
+                    socket.emit('clear');
+                });
+                socket.on('cleared', function(){
+                    texting.textContent = '';
+                });
+            }
+
+
+
+        })();
+    </script>
+
+</body>
+</html>
