@@ -1,2 +1,2 @@
 # Texting App
-#### Chat application for sending/recieving and deleting texts
+#### Chat application built in Visual Studio Code
